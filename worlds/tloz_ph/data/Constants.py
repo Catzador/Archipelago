@@ -179,6 +179,9 @@ STAGES = {
 
 }
 
+# Stages that respawn you at the entrance rather than the room
+DUNGEON_STAGES = [28, 29, 30, 31, 32, 33, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49]
+
 ISLANDS = [
     "Mercay Island",
     "Cannon Island",

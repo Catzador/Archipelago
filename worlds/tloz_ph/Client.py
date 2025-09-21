@@ -10,7 +10,7 @@ ROM_ADDRS = {
 }
 
 RAM_ADDRS = {
-    "game_state": (0x060C48, 1, "Main RAM"),
+    "game_state": (0x1B7FB8, 1, "Main RAM"),
     "in_cutscene": (0x060F78, 1, "Main RAM"),
 
     "link_health": (0x1CB08E, 2, "Main RAM"),
@@ -107,6 +107,7 @@ class PhantomHourglassClient(DSZeldaClient):
         self.at_sea = False
         self.lowered_water = False
         self.visited_entrances = set()
+        self.respawn_entrance = None
 
     async def check_game_version(self, ctx: "BizHawkClientContext") -> bool:
         rom_name_bytes = (await bizhawk.read(ctx.bizhawk_ctx, [ROM_ADDRS["game_identifier"]]))[0]
@@ -347,6 +348,7 @@ class PhantomHourglassClient(DSZeldaClient):
     async def process_hard_coded_rooms(self, ctx, current_scene):
         # Yellow warp in TotOK saves keys
         # TODO: allow this to work with ER
+        current_stage, current_room = (self.current_scene & 0xFF00) >> 8, self.current_scene & 0xFF,
         if self.last_scene is not None:
             if current_scene == 0x2509 and self.last_scene == 0x2507:
                 await self.write_totok_midway_keys(ctx)
@@ -368,6 +370,12 @@ class PhantomHourglassClient(DSZeldaClient):
             await self.edit_ship(ctx)
         if current_scene in [0xB03]:
             await self.remove_ship_parts(ctx)
+
+        # Entering a dungeon writes respawn entrance to a variable and datastore
+        print(f"current stage {current_stage}, last: {self.last_stage}")
+        if current_stage in DUNGEON_STAGES and current_stage != self.last_stage:
+            self.respawn_entrance = (current_stage, current_room, self.read_result["entrance"])
+            print(f"Set respawn entrance {self.respawn_entrance}")
 
     async def write_totok_midway_keys(self, ctx):
         data = DUNGEON_KEY_DATA[372]
@@ -802,3 +810,30 @@ class PhantomHourglassClient(DSZeldaClient):
     # fixes conflict with bizhawk_UT
     async def game_watcher(self, ctx: "BizHawkClientContext") -> None:
         await super().game_watcher(ctx)
+
+    async def detect_in_menu(self, ctx, current_stage):
+        if current_stage & 0xFF == 0x6E:
+            pr = await read_memory_value(ctx, 0x1B7FB8, silent=True)
+            if pr:
+                print(f"Starting faster timeout")
+                self.precise_detection = True
+                ctx.watcher_timeout = 0.005
+
+
+    async def run_precisely(self, ctx: "BizHawkClientContext", current_stage):
+        if current_stage & 0xFF == 0x6E:
+            return True
+        await bizhawk.lock(ctx.bizhawk_ctx)
+        print(f"Entering game from menu, precisely!")
+        self.precise_detection = False
+        ctx.watcher_timeout = 0.1
+        self.last_scene = None
+        await self._entrance_warp(ctx, self.current_scene, self.read_result["entrance"])
+        return False
+
+    async def er_from_menu(self, ctx, stage, room, entrance):
+        if self.respawn_entrance and stage == self.respawn_entrance[0]:
+            self.respawn_entrance = (28, 2, 1)
+            print(f"Setting respawn in dungeon {self.respawn_entrance}")
+            return self.respawn_entrance
+        return None

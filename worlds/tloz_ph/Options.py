@@ -504,7 +504,6 @@ class PhantomHourglassShuffleCaves(Choice):
     """
     display_name = "shuffle_caves"
     option_false = 0
-    option_
 
 @dataclass
 class PhantomHourglassOptions(PerGameCommonOptions):
