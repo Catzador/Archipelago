@@ -1,4 +1,5 @@
 from BaseClasses import ItemClassification
+from worlds.tloz_ph.DSZeldaClient.subclasses import DSItem
 from worlds.tloz_ph.data.Constants import *
 
 
@@ -1421,20 +1422,25 @@ ITEMS_DATA = {
 }
 
 id_check = []
-for data in ITEMS_DATA.values():
+ITEMS = {}
+for name, data in ITEMS_DATA.items():
     if data["id"] in id_check:
         raise f"Duplicate ID Detected: {data['id']}"
     id_check.append(data["id"])
-
-# IDs are now fixed!!!
-"""for i, k in enumerate(ITEMS_DATA):
-    ITEMS_DATA[k]["id"] = i+1"""
+    # Create Item Objects
+    ITEMS[name] = DSItem(name, data)
 
 # bulk data editing / export
 if __name__ == "__main__":
-    for name, data in ITEMS_DATA.items():
-        if name in ITEM_GROUPS["Pedestal Items"]:
-            print(f"{name}: {data['id']}")
+    keys = set()
+    for data in ITEMS_DATA.values():
+        for k in data:
+            keys.add(k)
+    for k in keys:
+        print(f"self.{k} = data.get(\"{k}\", None)")
+    # for name, data in ITEMS_DATA.items():
+    #     if name in ITEM_GROUPS["Pedestal Items"]:
+    #         print(f"{name}: {data['id']}")
 """
     keys = set()
     for name, data in ITEMS_DATA.items():

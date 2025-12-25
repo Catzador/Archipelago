@@ -1,5 +1,6 @@
 from random import randint
 from .DSZeldaClient.DSZeldaClient import *
+from .data.Items import ITEMS
 
 if TYPE_CHECKING:
     from worlds._bizhawk.context import BizHawkClientContext
@@ -99,6 +100,7 @@ class PhantomHourglassClient(DSZeldaClient):
         self.stage_flag_offset = STAGE_FLAGS_OFFSET
         self.hint_data = HINT_DATA
         self.entrances = ENTRANCES
+        self.items = ITEMS
 
         # Ph variables
         self.goal_room = 0x3600
